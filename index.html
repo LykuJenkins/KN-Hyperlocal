@@ -53,65 +53,69 @@
   a{color:var(--nws-blue);text-decoration:none}
   a:hover{text-decoration:underline}
 
-  /* Header */
+  /* Header — compact, low-key */
   header.gov{
     background:var(--nws-blue-dark);
-    color:#fff;
-    padding:6px 16px;
-    font-size:12px;
+    color:#cfe2ff;
+    padding:3px 12px;
+    padding-top:max(3px, var(--safe-top));
+    font-size:10.5px;
     display:flex;
     justify-content:space-between;
     align-items:center;
-    flex-wrap:wrap;
     gap:8px;
-    padding-top:max(6px, var(--safe-top));
+    opacity:.85;
   }
-  header.gov a{color:#cfe2ff}
+  header.gov a{color:#9fc2ff}
+  header.gov strong{font-weight:600;color:#fff;letter-spacing:.3px}
+  @media (max-width:560px){
+    header.gov{font-size:10px}
+    header.gov .gov-hide-mobile{display:none}
+  }
 
-  /* Hero */
+  /* Hero — compact */
   .hero{
     background:linear-gradient(180deg,#003e7e 0%,#00264b 100%);
     color:#fff;
-    padding:22px 16px 18px;
-    border-bottom:4px solid var(--nws-gold);
+    padding:12px 16px 10px;
+    border-bottom:2px solid var(--nws-gold);
   }
   .hero .wrap{max-width:1280px;margin:0 auto}
-  .hero h1{margin:0 0 4px;font-size:clamp(20px, 5vw, 28px);font-weight:700;letter-spacing:.2px}
-  .hero .sub{margin:0;opacity:.92;font-size:14px}
+  .hero h1{margin:0;font-size:clamp(15px, 3.5vw, 19px);font-weight:600;letter-spacing:.1px;line-height:1.2}
+  .hero .sub{margin:2px 0 0;opacity:.8;font-size:11.5px;line-height:1.3}
   .hero .meta{
-    margin-top:10px;display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;
-    color:#dce8ff;
+    margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:10.5px;
+    color:#b8cded;
   }
-  .hero .meta span b{color:#fff;font-weight:600}
+  .hero .meta span b{color:#fff;font-weight:500}
   .hero .badge{
-    display:inline-block;background:rgba(255,255,255,.12);
-    border:1px solid rgba(255,255,255,.25);
-    padding:2px 8px;border-radius:10px;font-size:11px;
-    margin-right:6px;letter-spacing:.4px;
+    display:inline-block;background:rgba(255,255,255,.08);
+    padding:1px 6px;border-radius:8px;font-size:9px;
+    margin-right:4px;letter-spacing:.3px;opacity:.85;
   }
-  .hero .refresh{margin-top:8px;font-size:12px;color:#cfe2ff}
+  .hero .refresh{margin-top:6px;font-size:10.5px;color:#b8cded;opacity:.85}
   .hero .refresh .dot{
-    display:inline-block;width:8px;height:8px;border-radius:50%;
-    background:#34d058;margin-right:6px;vertical-align:middle;
-    box-shadow:0 0 0 3px rgba(52,208,88,.25);
+    display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:#34d058;margin-right:5px;vertical-align:middle;
+    box-shadow:0 0 0 2px rgba(52,208,88,.2);
   }
-  .hero .refresh.error .dot{background:var(--nws-red);box-shadow:0 0 0 3px rgba(214,40,40,.25)}
+  .hero .refresh.error .dot{background:var(--nws-red);box-shadow:0 0 0 2px rgba(214,40,40,.2)}
 
   /* Install button — only shown when prompt fires */
   .install-btn{
     display:none;
-    margin-top:10px;
+    margin-top:8px;
     background:var(--nws-gold);
     color:#00264b;
     border:none;
-    padding:8px 16px;
-    border-radius:6px;
+    padding:6px 12px;
+    border-radius:5px;
     font-weight:700;
-    font-size:13px;
+    font-size:11.5px;
     cursor:pointer;
-    box-shadow:0 2px 4px rgba(0,0,0,.2);
+    box-shadow:0 1px 3px rgba(0,0,0,.2);
   }
-  .install-btn.show{display:inline-flex;align-items:center;gap:6px}
+  .install-btn.show{display:inline-flex;align-items:center;gap:5px}
   .install-btn:active{transform:translateY(1px)}
 
   /* Tabs */
@@ -129,27 +133,31 @@
   }
   .tab{
     appearance:none;border:none;background:transparent;
-    padding:14px 18px;
-    font-size:14px;font-weight:600;
+    padding:10px 16px;
+    font-size:13px;font-weight:600;
     color:var(--ink-soft);
     cursor:pointer;
-    border-bottom:3px solid transparent;
+    border-bottom:2px solid transparent;
     transition:color .15s, border-color .15s, background .15s;
     font-family:inherit;
-    display:inline-flex;align-items:center;gap:6px;
+    display:inline-flex;align-items:center;gap:5px;
     white-space:nowrap;
   }
-  .tab .ic{font-size:16px;line-height:1}
+  .tab .ic{font-size:14px;line-height:1}
   .tab:hover{color:var(--nws-blue);background:#f7f9fc}
   .tab.active{
     color:var(--nws-blue);
     border-bottom-color:var(--nws-gold);
   }
   .tab:focus-visible{outline:2px solid var(--nws-blue);outline-offset:-2px}
+  @media (max-width:560px){
+    .tab{padding:10px 12px;font-size:12.5px}
+    .tab .ic{font-size:13px}
+  }
 
   /* Main */
   main{
-    max-width:1280px;margin:0 auto;padding:16px 16px calc(60px + var(--safe-bottom));
+    max-width:1280px;margin:0 auto;padding:12px 16px calc(60px + var(--safe-bottom));
     display:block;
   }
   .tab-panel{display:none}
@@ -214,12 +222,22 @@
   .stat .val .u{font-size:11px;color:var(--ink-soft);font-weight:500;margin-left:3px}
   .stat .sub{font-size:11px;color:var(--ink-soft);margin-top:2px}
 
-  /* Charts */
-  .chart-card{padding:14px 16px 18px}
-  .chart-card canvas{width:100%!important;height:240px}
+  /* Charts — fixed-height wrapper prevents Chart.js resize loop */
+  .chart-card{padding:12px 14px 14px}
+  .chart-wrap{
+    position:relative;
+    width:100%;
+    height:220px;
+  }
+  .chart-wrap canvas{
+    position:absolute;
+    inset:0;
+    width:100%!important;
+    height:100%!important;
+  }
   @media (max-width:640px){
-    .chart-card canvas{height:200px}
-    .chart-card{padding:12px}
+    .chart-wrap{height:180px}
+    .chart-card{padding:10px 12px 12px}
   }
 
   /* Table */
@@ -258,19 +276,18 @@
 <body>
 
 <header class="gov">
-  <div><strong>NOAA</strong> · National Weather Service · Hyperlocal Observations</div>
+  <div class="gov-hide-mobile"><strong>NOAA</strong> · NWS · Hyperlocal</div>
   <div><a href="https://www.weather.gov/wrh/timeseries?site=AV906&hours=72&units=english&chart=on&headers=on&obs=tabular&hourly=true&pview=full&font=12&plot=" target="_blank" rel="noopener">weather.gov ↗</a></div>
 </header>
 
 <section class="hero">
   <div class="wrap">
     <h1>KE8GJZ-2 · Gobles, Michigan</h1>
-    <p class="sub">Hyperlocal weather observations — APRSWXNET / CWOP station reporting to NWS Grand Rapids (GRR)</p>
+    <p class="sub">APRSWXNET / CWOP station reporting to NWS Grand Rapids (GRR)</p>
     <div class="meta">
-      <span><span class="badge">STATION</span> <b>AV906</b> / KE8GJZ-2</span>
-      <span><span class="badge">LAT/LON</span> <b>42.41500° N, -85.90967° W</b></span>
+      <span><span class="badge">STATION</span> <b>AV906</b></span>
+      <span><span class="badge">LAT/LON</span> <b>42.415° N, -85.910° W</b></span>
       <span><span class="badge">ELEV</span> <b>662.73 ft</b></span>
-      <span><span class="badge">NET</span> <b>APRSWXNET · CWOP · GRR</b></span>
     </div>
     <div class="refresh" id="refreshBanner">
       <span class="dot"></span><span id="refreshText">Initializing…</span>
@@ -349,28 +366,28 @@
 
     <section class="card chart-card">
       <h2>Temperature & Dewpoint <span class="small">recent observations · °F</span></h2>
-      <canvas id="chartTemp"></canvas>
+      <div class="chart-wrap"><canvas id="chartTemp"></canvas></div>
     </section>
 
     <div class="grid-2">
       <section class="card chart-card">
         <h2>Wind Speed & Gust <span class="small">mph</span></h2>
-        <canvas id="chartWind"></canvas>
+        <div class="chart-wrap"><canvas id="chartWind"></canvas></div>
       </section>
 
       <section class="card chart-card">
         <h2>Station Pressure <span class="small">inHg</span></h2>
-        <canvas id="chartPres"></canvas>
+        <div class="chart-wrap"><canvas id="chartPres"></canvas></div>
       </section>
 
       <section class="card chart-card">
         <h2>Relative Humidity <span class="small">%</span></h2>
-        <canvas id="chartRH"></canvas>
+        <div class="chart-wrap"><canvas id="chartRH"></canvas></div>
       </section>
 
       <section class="card chart-card">
         <h2>Wind Direction <span class="small">degrees</span></h2>
-        <canvas id="chartDir"></canvas>
+        <div class="chart-wrap"><canvas id="chartDir"></canvas></div>
       </section>
     </div>
 
@@ -456,9 +473,17 @@ function initTabs() {
     panels.forEach(p => {
       p.classList.toggle("active", p.id === "panel-" + name);
     });
-    // Lazy-render charts when details tab is first opened
+    // Lazy-render charts when details tab is first opened;
+    // if charts already exist, just nudge them to resize (they were display:none)
     if (name === "details" && lastObservations.length) {
-      renderCharts(lastObservations);
+      if (Object.keys(charts).length === 0) {
+        renderCharts(lastObservations);
+      } else {
+        // Give the browser a tick to apply the display change before resizing
+        requestAnimationFrame(() => {
+          Object.values(charts).forEach(c => { try { c.resize(); } catch(e){} });
+        });
+      }
     }
     // Update URL without scrolling
     const url = new URL(location);
