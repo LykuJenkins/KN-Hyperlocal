@@ -617,6 +617,19 @@ const val = (field) => {
   return (typeof v === "number" && !isNaN(v)) ? v : null;
 };
 
+// Find the most recent observation (scanning backwards from the latest) that has
+// a valid value for the given field. Returns { value, obs, idx } or null.
+// CWOP/APRSWXNET stations report every ~5 minutes; the API fills the in-between
+// slots with nulls. This keeps the current-conditions display populated between
+// reports instead of showing "--" the moment the latest slot is empty.
+function lastValidField(obs, fieldName) {
+  for (let i = obs.length - 1; i >= 0; i--) {
+    const v = val(obs[i][fieldName]);
+    if (v !== null) return { value: v, obs: obs[i], idx: i };
+  }
+  return null;
+}
+
 // ----------------- Tabs -----------------
 function initTabs() {
   const tabs = document.querySelectorAll(".tab");
@@ -684,76 +697,111 @@ function renderCurrent(obs) {
   }
   const cur = obs[obs.length - 1];
 
-  const tempC = val(cur.temperature);
-  const dwptC = val(cur.dewpoint);
-  const rh    = val(cur.relativeHumidity);
-  const wspdK = val(cur.windSpeed);
-  const wgstK = val(cur.windGust);
-  const wdir  = val(cur.windDirection);
-  const presP = val(cur.barometricPressure);
-  const visM  = val(cur.visibility);
+  // For each field, fall back to the most recent observation that has a valid
+  // value (CWOP reports every ~5 min; API null-fills in-between slots).
+  const tempF = lastValidField(obs, "temperature");
+  const dwptF = lastValidField(obs, "dewpoint");
+  const rhF   = lastValidField(obs, "relativeHumidity");
+  const wspdK = lastValidField(obs, "windSpeed");
+  const wgstK = lastValidField(obs, "windGust");
+  const wdirF = lastValidField(obs, "windDirection");
+  const presP = lastValidField(obs, "barometricPressure");
+  const visM  = lastValidField(obs, "visibility");
+  const hiC   = lastValidField(obs, "heatIndex");
+  const wcC   = lastValidField(obs, "windChill");
 
-  const tempF = CtoF(tempC);
-  const dwptF = CtoF(dwptC);
-  const wspd  = kmhToMph(wspdK);
-  const wgst  = kmhToMph(wgstK);
-  const pres  = paToInHg(presP);
-  const vis   = mToMi(visM);
+  const tempC = tempF ? tempF.value : null;
+  const dwptC = dwptF ? dwptF.value : null;
+  const rh    = rhF   ? rhF.value   : null;
+  const wspdKv = wspdK ? wspdK.value : null;
+  const wgstKv = wgstK ? wgstK.value : null;
+  const wdir   = wdirF ? wdirF.value : null;
+  const presPv = presP ? presP.value : null;
+  const visMv  = visM  ? visM.value  : null;
+  const hiCv   = hiC   ? hiC.value   : null;
+  const wcCv   = wcC   ? wcC.value   : null;
+
+  const tempF_val = CtoF(tempC);
+  const dwptF_val = CtoF(dwptC);
+  const wspd  = kmhToMph(wspdKv);
+  const wgst  = kmhToMph(wgstKv);
+  const pres  = paToInHg(presPv);
+  const vis   = mToMi(visMv);
 
   // Feels-like
   let feelsF = null;
-  const hiC = val(cur.heatIndex);
-  const wcC = val(cur.windChill);
-  if (hiC !== null) feelsF = CtoF(hiC);
-  else if (wcC !== null) feelsF = CtoF(wcC);
-  else if (tempF !== null) {
-    if (tempF >= 80 && rh !== null) {
-      const T = tempF, R = rh;
+  if (hiCv !== null) feelsF = CtoF(hiCv);
+  else if (wcCv !== null) feelsF = CtoF(wcCv);
+  else if (tempF_val !== null) {
+    if (tempF_val >= 80 && rh !== null) {
+      const T = tempF_val, R = rh;
       feelsF = -42.379 + 2.04901523*T + 10.14333127*R
               - 0.22475541*T*R - 0.00683783*T*T
               - 0.05481717*R*R + 0.00122874*T*T*R
               + 0.00085282*T*R*R - 0.00000199*T*T*R*R;
-    } else if (tempF <= 50 && wspd !== null && wspd >= 3) {
+    } else if (tempF_val <= 50 && wspd !== null && wspd >= 3) {
       const V = wspd;
-      feelsF = 35.74 + 0.6215*tempF - 35.75*Math.pow(V,0.16) + 0.4275*tempF*Math.pow(V,0.16);
+      feelsF = 35.74 + 0.6215*tempF_val - 35.75*Math.pow(V,0.16) + 0.4275*tempF_val*Math.pow(V,0.16);
     } else {
-      feelsF = tempF;
+      feelsF = tempF_val;
     }
   }
 
-  // Pressure trend
+  // Pressure trend — compare current pressure to the value ~1 hour ago,
+  // using lastValidField so we don't trip on a null slot either side.
   let trend = "—";
-  if (pres !== null && obs.length > 12) {
-    const pastP = paToInHg(val(obs[obs.length - 13].barometricPressure));
+  if (pres !== null) {
+    // Look for the most recent pressure value that's at least 50 minutes older
+    const nowMs = presP.obs.timestamp ? new Date(presP.obs.timestamp).getTime() : Date.now();
+    let pastP = null;
+    for (let i = presP.idx - 1; i >= 0; i--) {
+      const t = new Date(obs[i].timestamp).getTime();
+      if (nowMs - t >= 50 * 60 * 1000) {
+        const v = val(obs[i].barometricPressure);
+        if (v !== null) { pastP = paToInHg(v); break; }
+      }
+    }
     if (pastP !== null) {
       const d = pres - pastP;
       trend = d > 0.02 ? "↑" : d < -0.02 ? "↓" : "→";
     }
   }
 
-  // 24h hi/lo
-  let hiF = null, loF = null;
-  if (tempF !== null) {
-    const curDate = new Date(cur.timestamp).toDateString();
+  // 24h hi/lo — scan all observations on the same calendar date as the
+  // latest temperature reading (which may be older than `cur`).
+  let hiF_val = null, loF_val = null;
+  if (tempF_val !== null) {
+    const refDate = new Date(tempF.obs.timestamp).toDateString();
     for (const o of obs) {
-      if (new Date(o.timestamp).toDateString() !== curDate) continue;
+      if (new Date(o.timestamp).toDateString() !== refDate) continue;
       const t = CtoF(val(o.temperature));
       if (t === null) continue;
-      if (hiF === null || t > hiF) hiF = t;
-      if (loF === null || t < loF) loF = t;
+      if (hiF_val === null || t > hiF_val) hiF_val = t;
+      if (loF_val === null || t < loF_val) loF_val = t;
     }
   }
 
   // Determine weather icon + summary using latest precip analysis if available
   const isDaytime = (cachedSunriseSunset && cachedSunriseSunset.now <= cachedSunriseSunset.sunset && cachedSunriseSunset.now >= cachedSunriseSunset.sunrise);
-  const { icon, summary } = pickWxIcon({ tempF, rh, wspd, stationRain: lastRadarAnalysis ? lastRadarAnalysis.stationRain : 0, isDaytime });
+  const { icon, summary } = pickWxIcon({ tempF: tempF_val, rh, wspd, stationRain: lastRadarAnalysis ? lastRadarAnalysis.stationRain : 0, isDaytime });
   $("wxIcon").textContent = icon;
   $("summaryVal").textContent = summary;
-  $("tempVal").textContent = fmtNum(tempF,0);
+  $("tempVal").textContent = fmtNum(tempF_val,0);
   $("feelsVal").textContent = feelsF !== null ? `Feels like ${fmtNum(feelsF,0)}°` : "";
-  $("currentMeta").textContent = `Updated ${fmtTime(cur.timestamp)}`;
 
-  $("dwptVal").textContent = fmtNum(dwptF,0);
+  // Build the "Updated ..." meta line — show the latest observation time,
+  // plus a brief staleness note if any of the displayed values came from
+  // an older observation (so the user knows the data isn't all from "now").
+  let metaText = `Updated ${fmtTime(cur.timestamp)}`;
+  const stalenessMins = computeStalenessMinutes([
+    tempF, dwptF, rhF, wspdK, wgstK, wdirF, presP, visM
+  ], cur.timestamp);
+  if (stalenessMins > 0) {
+    metaText += ` · some data ${stalenessMins}m old`;
+  }
+  $("currentMeta").textContent = metaText;
+
+  $("dwptVal").textContent = fmtNum(dwptF_val,0);
   $("rhVal").textContent = fmtNum(rh,0);
   $("windVal").textContent = fmtNum(wspd,0);
   $("windDir").textContent = degToCompass(wdir);
@@ -761,11 +809,26 @@ function renderCurrent(obs) {
   $("presVal").textContent = fmtNum(pres,2);
   $("presTrend").textContent = trend;
   $("visVal").textContent = vis === null ? "--" : (vis < 10 ? vis.toFixed(1) : vis.toFixed(0));
-  if (hiF !== null && loF !== null) {
-    $("hiLoVal").innerHTML = `${fmtNum(hiF,0)}°<span class="lo">/${fmtNum(loF,0)}°</span>`;
+  if (hiF_val !== null && loF_val !== null) {
+    $("hiLoVal").innerHTML = `${fmtNum(hiF_val,0)}°<span class="lo">/${fmtNum(loF_val,0)}°</span>`;
   } else {
     $("hiLoVal").textContent = "--";
   }
+}
+
+// Compute the maximum staleness (in minutes) between the latest observation
+// and any of the per-field source observations. Returns 0 if everything came
+// from the latest observation.
+function computeStalenessMinutes(fieldResults, latestTimestamp) {
+  const latestMs = new Date(latestTimestamp).getTime();
+  let maxStalenessMs = 0;
+  for (const fr of fieldResults) {
+    if (!fr) continue;
+    const ms = new Date(fr.obs.timestamp).getTime();
+    const staleness = latestMs - ms;
+    if (staleness > maxStalenessMs) maxStalenessMs = staleness;
+  }
+  return Math.round(maxStalenessMs / 60000);
 }
 
 // Map observation data to a weather emoji + short summary (Google Weather style)

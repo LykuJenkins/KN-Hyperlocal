@@ -4,7 +4,7 @@
  *   - Cache-first for static assets (icons, scripts)
  *   - Offline fallback: serve cached index.html when network fails
  */
-const CACHE_VERSION = "kn-hyperlocal-v5";
+const CACHE_VERSION = "kn-hyperlocal-v6";
 const APP_SHELL = [
   "./",
   "./index.html",
