@@ -1,0 +1,32 @@
+{
+  "name": "KN-Hyperlocal · KE8GJZ-2 Gobles, MI",
+  "short_name": "KN-Hyperlocal",
+  "description": "Hyperlocal weather observations from KE8GJZ-2 Gobles, MI (APRSWXNET/CWOP - GRR) via NOAA weather.gov.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#00264b",
+  "theme_color": "#003e7e",
+  "categories": ["weather", "utilities", "news"],
+  "icons": [
+    { "src": "favicon-32.png",         "sizes": "32x32",    "type": "image/png" },
+    { "src": "icon-192.png",           "sizes": "192x192",  "type": "image/png" },
+    { "src": "icon-512.png",           "sizes": "512x512",  "type": "image/png" },
+    { "src": "icon-512-maskable.png",  "sizes": "512x512",  "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Current conditions",
+      "short_name": "Now",
+      "description": "Latest weather observation from KE8GJZ-2",
+      "url": "./?tab=current"
+    },
+    {
+      "name": "More details (charts)",
+      "short_name": "Details",
+      "description": "Time-series charts of recent observations",
+      "url": "./?tab=details"
+    }
+  ]
+}

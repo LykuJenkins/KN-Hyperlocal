@@ -2,12 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>KN-Hyperlocal · KE8GJZ-2 Gobles, MI · Live Weather</title>
 <meta name="description" content="Hyperlocal weather observations for KE8GJZ-2 Gobles, MI (APRSWXNET/CWOP - GRR) from weather.gov.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='20'%3E%E2%98%80%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<meta name="theme-color" content="#003e7e">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KN-Hyperlocal">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Charts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
 <style>
   :root{
     --nws-blue:#003e7e;
@@ -21,9 +34,12 @@
     --line:#dde3ec;
     --good:#1b8a3a;
     --shadow:0 2px 6px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
+  html{scroll-behavior:smooth}
   body{
     background:var(--bg);
     color:var(--ink);
@@ -31,10 +47,13 @@
     font-size:15px;
     line-height:1.5;
     -webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:none;
   }
   a{color:var(--nws-blue);text-decoration:none}
   a:hover{text-decoration:underline}
 
+  /* Header */
   header.gov{
     background:var(--nws-blue-dark);
     color:#fff;
@@ -45,9 +64,11 @@
     align-items:center;
     flex-wrap:wrap;
     gap:8px;
+    padding-top:max(6px, var(--safe-top));
   }
   header.gov a{color:#cfe2ff}
 
+  /* Hero */
   .hero{
     background:linear-gradient(180deg,#003e7e 0%,#00264b 100%);
     color:#fff;
@@ -55,7 +76,7 @@
     border-bottom:4px solid var(--nws-gold);
   }
   .hero .wrap{max-width:1280px;margin:0 auto}
-  .hero h1{margin:0 0 4px;font-size:26px;font-weight:700;letter-spacing:.2px}
+  .hero h1{margin:0 0 4px;font-size:clamp(20px, 5vw, 28px);font-weight:700;letter-spacing:.2px}
   .hero .sub{margin:0;opacity:.92;font-size:14px}
   .hero .meta{
     margin-top:10px;display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;
@@ -76,13 +97,76 @@
   }
   .hero .refresh.error .dot{background:var(--nws-red);box-shadow:0 0 0 3px rgba(214,40,40,.25)}
 
-  main{
-    max-width:1280px;margin:18px auto;padding:0 16px 60px;
-    display:grid;grid-template-columns:1fr;gap:16px;
+  /* Install button — only shown when prompt fires */
+  .install-btn{
+    display:none;
+    margin-top:10px;
+    background:var(--nws-gold);
+    color:#00264b;
+    border:none;
+    padding:8px 16px;
+    border-radius:6px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+    box-shadow:0 2px 4px rgba(0,0,0,.2);
   }
-  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-  @media (max-width:780px){.grid-2{grid-template-columns:1fr}}
+  .install-btn.show{display:inline-flex;align-items:center;gap:6px}
+  .install-btn:active{transform:translateY(1px)}
 
+  /* Tabs */
+  .tabs{
+    background:var(--card);
+    border-bottom:1px solid var(--line);
+    position:sticky;
+    top:0;
+    z-index:50;
+    box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+  .tabs .wrap{
+    max-width:1280px;margin:0 auto;padding:0 8px;
+    display:flex;gap:0;
+  }
+  .tab{
+    appearance:none;border:none;background:transparent;
+    padding:14px 18px;
+    font-size:14px;font-weight:600;
+    color:var(--ink-soft);
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    transition:color .15s, border-color .15s, background .15s;
+    font-family:inherit;
+    display:inline-flex;align-items:center;gap:6px;
+    white-space:nowrap;
+  }
+  .tab .ic{font-size:16px;line-height:1}
+  .tab:hover{color:var(--nws-blue);background:#f7f9fc}
+  .tab.active{
+    color:var(--nws-blue);
+    border-bottom-color:var(--nws-gold);
+  }
+  .tab:focus-visible{outline:2px solid var(--nws-blue);outline-offset:-2px}
+
+  /* Main */
+  main{
+    max-width:1280px;margin:0 auto;padding:16px 16px calc(60px + var(--safe-bottom));
+    display:block;
+  }
+  .tab-panel{display:none}
+  .tab-panel.active{display:block}
+  .tab-panel.active > * + *{margin-top:16px}
+
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:880px){
+    .grid-2{grid-template-columns:1fr}
+    .grid-3{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:560px){
+    .grid-3{grid-template-columns:1fr}
+  }
+
+  /* Card */
   .card{
     background:var(--card);
     border:1px solid var(--line);
@@ -94,37 +178,52 @@
     margin:0 0 12px;font-size:14px;font-weight:700;letter-spacing:.6px;
     text-transform:uppercase;color:var(--nws-blue);
     border-bottom:2px solid var(--line);padding-bottom:8px;
-    display:flex;justify-content:space-between;align-items:baseline;
+    display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+    flex-wrap:wrap;
   }
   .card h2 .small{
     font-size:11px;font-weight:500;color:var(--ink-soft);text-transform:none;letter-spacing:0;
   }
 
+  /* Current conditions */
   .current{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center}
-  @media (max-width:640px){.current{grid-template-columns:1fr}}
+  @media (max-width:640px){
+    .current{grid-template-columns:1fr;text-align:center}
+    .current .left{order:2}
+    .current .stats{order:1}
+  }
   .current .temp{
-    font-size:64px;font-weight:700;line-height:1;color:var(--ink);
+    font-size:clamp(48px, 14vw, 72px);font-weight:700;line-height:1;color:var(--ink);
     font-variant-numeric:tabular-nums;
   }
-  .current .temp .u{font-size:24px;color:var(--ink-soft);font-weight:500;margin-left:4px}
+  .current .temp .u{font-size:clamp(20px, 5vw, 26px);color:var(--ink-soft);font-weight:500;margin-left:4px}
   .current .feels{font-size:13px;color:var(--ink-soft);margin-top:4px}
   .current .obs-time{font-size:12px;color:var(--ink-soft);margin-top:8px}
   .current .cond{font-size:14px;color:var(--ink-soft);margin-top:2px}
 
   .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media (max-width:420px){
+    .stats{grid-template-columns:1fr 1fr;gap:8px}
+  }
   .stat{
     background:#f7f9fc;border:1px solid var(--line);border-radius:8px;
     padding:10px 12px;
   }
   .stat .lbl{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px}
-  .stat .val{font-size:18px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+  .stat .val{font-size:clamp(16px, 4.5vw, 20px);font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
   .stat .val .u{font-size:11px;color:var(--ink-soft);font-weight:500;margin-left:3px}
   .stat .sub{font-size:11px;color:var(--ink-soft);margin-top:2px}
 
+  /* Charts */
   .chart-card{padding:14px 16px 18px}
-  .chart-card canvas{width:100%!important;height:220px}
+  .chart-card canvas{width:100%!important;height:240px}
+  @media (max-width:640px){
+    .chart-card canvas{height:200px}
+    .chart-card{padding:12px}
+  }
 
-  .table-wrap{overflow-x:auto;max-height:520px;overflow-y:auto}
+  /* Table */
+  .table-wrap{overflow-x:auto;max-height:520px;overflow-y:auto;-webkit-overflow-scrolling:touch}
   table.obs{
     width:100%;border-collapse:collapse;font-size:12.5px;
     font-variant-numeric:tabular-nums;
@@ -139,19 +238,28 @@
   table.obs tr:hover td{background:#f7f9fc}
   table.obs .na{color:#9aa6b5}
 
+  /* Footer */
   footer{
-    max-width:1280px;margin:0 auto;padding:18px 16px 40px;
+    max-width:1280px;margin:0 auto;padding:18px 16px calc(40px + var(--safe-bottom));
     color:var(--ink-soft);font-size:12px;line-height:1.7;
   }
   footer hr{border:0;border-top:1px solid var(--line);margin:0 0 12px}
   footer b{color:var(--ink)}
+  footer code{background:#eef2f7;padding:1px 5px;border-radius:3px;font-size:11px;color:var(--ink)}
+
+  /* Tab content transition */
+  .tab-panel.active{animation:fadeIn .25s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  /* Hidden state */
+  [hidden]{display:none!important}
 </style>
 </head>
 <body>
 
 <header class="gov">
   <div><strong>NOAA</strong> · National Weather Service · Hyperlocal Observations</div>
-  <div><a href="https://www.weather.gov/wrh/timeseries?site=AV906&hours=72&units=english&chart=on&headers=on&obs=tabular&hourly=true&pview=full&font=12&plot=" target="_blank" rel="noopener">View on weather.gov ↗</a></div>
+  <div><a href="https://www.weather.gov/wrh/timeseries?site=AV906&hours=72&units=english&chart=on&headers=on&obs=tabular&hourly=true&pview=full&font=12&plot=" target="_blank" rel="noopener">weather.gov ↗</a></div>
 </header>
 
 <section class="hero">
@@ -161,85 +269,111 @@
     <div class="meta">
       <span><span class="badge">STATION</span> <b>AV906</b> / KE8GJZ-2</span>
       <span><span class="badge">LAT/LON</span> <b>42.41500° N, -85.90967° W</b></span>
-      <span><span class="badge">ELEVATION</span> <b>662.73 ft</b></span>
-      <span><span class="badge">NETWORK</span> <b>APRSWXNET / CWOP · GRR</b></span>
+      <span><span class="badge">ELEV</span> <b>662.73 ft</b></span>
+      <span><span class="badge">NET</span> <b>APRSWXNET · CWOP · GRR</b></span>
     </div>
     <div class="refresh" id="refreshBanner">
       <span class="dot"></span><span id="refreshText">Initializing…</span>
     </div>
+    <button id="installBtn" class="install-btn" aria-label="Install KN-Hyperlocal app">
+      <span>⬇</span> Install app
+    </button>
   </div>
 </section>
 
+<!-- Sticky tab bar -->
+<nav class="tabs" role="tablist" aria-label="Weather view">
+  <div class="wrap">
+    <button class="tab active" id="tab-current" role="tab" aria-selected="true" aria-controls="panel-current" data-tab="current">
+      <span class="ic">🌡️</span><span>Current Conditions</span>
+    </button>
+    <button class="tab" id="tab-details" role="tab" aria-selected="false" aria-controls="panel-details" data-tab="details">
+      <span class="ic">📊</span><span>More Details</span>
+    </button>
+  </div>
+</nav>
+
 <main>
 
-  <section class="card" id="currentCard">
-    <h2>Current Conditions <span class="small" id="currentMeta">—</span></h2>
-    <div class="current">
-      <div>
-        <div class="temp"><span id="tempVal">--</span><span class="u">°F</span></div>
-        <div class="cond" id="condVal">Loading observation…</div>
-        <div class="feels" id="feelsVal">&nbsp;</div>
-        <div class="obs-time" id="obsTime">&nbsp;</div>
+  <!-- =========== TAB 1: CURRENT CONDITIONS =========== -->
+  <section class="tab-panel active" id="panel-current" role="tabpanel" aria-labelledby="tab-current">
+
+    <section class="card" id="currentCard">
+      <h2>Current Conditions <span class="small" id="currentMeta">—</span></h2>
+      <div class="current">
+        <div class="left">
+          <div class="temp"><span id="tempVal">--</span><span class="u">°F</span></div>
+          <div class="cond" id="condVal">Loading observation…</div>
+          <div class="feels" id="feelsVal">&nbsp;</div>
+          <div class="obs-time" id="obsTime">&nbsp;</div>
+        </div>
+        <div class="stats" id="statsGrid">
+          <div class="stat"><div class="lbl">Dewpoint</div><div class="val"><span id="dwptVal">--</span><span class="u">°F</span></div><div class="sub" id="rhSub">RH --%</div></div>
+          <div class="stat"><div class="lbl">Wind</div><div class="val"><span id="windVal">--</span><span class="u">mph</span></div><div class="sub" id="windDir">--</div></div>
+          <div class="stat"><div class="lbl">Wind Gust</div><div class="val"><span id="gustVal">--</span><span class="u">mph</span></div><div class="sub">&nbsp;</div></div>
+          <div class="stat"><div class="lbl">Pressure</div><div class="val"><span id="presVal">--</span><span class="u">inHg</span></div><div class="sub" id="presTrend">&nbsp;</div></div>
+          <div class="stat"><div class="lbl">Visibility</div><div class="val"><span id="visVal">--</span><span class="u">mi</span></div><div class="sub" id="visSub">&nbsp;</div></div>
+          <div class="stat"><div class="lbl">24h Temp Range</div><div class="val" id="hiLoVal">--</div><div class="sub" id="hiLoSub">&nbsp;</div></div>
+        </div>
       </div>
-      <div class="stats" id="statsGrid">
-        <div class="stat"><div class="lbl">Dewpoint</div><div class="val"><span id="dwptVal">--</span><span class="u">°F</span></div><div class="sub" id="rhSub">RH --%</div></div>
-        <div class="stat"><div class="lbl">Wind</div><div class="val"><span id="windVal">--</span><span class="u">mph</span></div><div class="sub" id="windDir">--</div></div>
-        <div class="stat"><div class="lbl">Wind Gust</div><div class="val"><span id="gustVal">--</span><span class="u">mph</span></div><div class="sub">&nbsp;</div></div>
-        <div class="stat"><div class="lbl">Pressure</div><div class="val"><span id="presVal">--</span><span class="u">inHg</span></div><div class="sub" id="presTrend">&nbsp;</div></div>
-        <div class="stat"><div class="lbl">Visibility</div><div class="val"><span id="visVal">--</span><span class="u">mi</span></div><div class="sub" id="visSub">&nbsp;</div></div>
-        <div class="stat"><div class="lbl">24h Temp Range</div><div class="val"><span id="hiLoVal">--</span></div><div class="sub" id="hiLoSub">&nbsp;</div></div>
+    </section>
+
+    <!-- Latest observation snapshot table on current tab too -->
+    <section class="card">
+      <h2>Recent Observations <span class="small">most recent first · tap a row for full details</span></h2>
+      <div class="table-wrap">
+        <table class="obs" id="obsTable">
+          <thead>
+            <tr>
+              <th>Time (Local)</th>
+              <th>Temp °F</th>
+              <th>Dewpt °F</th>
+              <th>RH %</th>
+              <th>Wind mph</th>
+              <th>Gust mph</th>
+              <th>Dir</th>
+              <th>Pres inHg</th>
+            </tr>
+          </thead>
+          <tbody id="obsBody">
+            <tr><td colspan="8" style="text-align:center;color:#9aa6b5;padding:20px">Loading…</td></tr>
+          </tbody>
+        </table>
       </div>
-    </div>
+    </section>
+
   </section>
 
-  <section class="card chart-card">
-    <h2>Temperature & Dewpoint <span class="small">recent observations · °F</span></h2>
-    <canvas id="chartTemp"></canvas>
-  </section>
-
-  <div class="grid-2">
-    <section class="card chart-card">
-      <h2>Wind Speed & Gust <span class="small">mph</span></h2>
-      <canvas id="chartWind"></canvas>
-    </section>
+  <!-- =========== TAB 2: MORE DETAILS (CHARTS) =========== -->
+  <section class="tab-panel" id="panel-details" role="tabpanel" aria-labelledby="tab-details">
 
     <section class="card chart-card">
-      <h2>Station Pressure <span class="small">inHg</span></h2>
-      <canvas id="chartPres"></canvas>
+      <h2>Temperature & Dewpoint <span class="small">recent observations · °F</span></h2>
+      <canvas id="chartTemp"></canvas>
     </section>
 
-    <section class="card chart-card">
-      <h2>Relative Humidity <span class="small">%</span></h2>
-      <canvas id="chartRH"></canvas>
-    </section>
+    <div class="grid-2">
+      <section class="card chart-card">
+        <h2>Wind Speed & Gust <span class="small">mph</span></h2>
+        <canvas id="chartWind"></canvas>
+      </section>
 
-    <section class="card chart-card">
-      <h2>Wind Direction <span class="small">degrees</span></h2>
-      <canvas id="chartDir"></canvas>
-    </section>
-  </div>
+      <section class="card chart-card">
+        <h2>Station Pressure <span class="small">inHg</span></h2>
+        <canvas id="chartPres"></canvas>
+      </section>
 
-  <section class="card">
-    <h2>Recent Observations <span class="small">~5-minute interval · most recent first</span></h2>
-    <div class="table-wrap">
-      <table class="obs" id="obsTable">
-        <thead>
-          <tr>
-            <th>Time (Local)</th>
-            <th>Temp °F</th>
-            <th>Dewpt °F</th>
-            <th>RH %</th>
-            <th>Wind mph</th>
-            <th>Gust mph</th>
-            <th>Dir</th>
-            <th>Pres inHg</th>
-          </tr>
-        </thead>
-        <tbody id="obsBody">
-          <tr><td colspan="8" style="text-align:center;color:#9aa6b5;padding:20px">Loading…</td></tr>
-        </tbody>
-      </table>
+      <section class="card chart-card">
+        <h2>Relative Humidity <span class="small">%</span></h2>
+        <canvas id="chartRH"></canvas>
+      </section>
+
+      <section class="card chart-card">
+        <h2>Wind Direction <span class="small">degrees</span></h2>
+        <canvas id="chartDir"></canvas>
+      </section>
     </div>
+
   </section>
 
 </main>
@@ -252,10 +386,11 @@
     <b>Station:</b> <b>KE8GJZ-2</b> (Gobles, MI) — amateur radio station reporting into the
     <b>Citizen Weather Observer Program (CWOP)</b> and relayed to NWS Grand Rapids (GRR).<br>
     <b>Units:</b> Observations are retrieved in metric (°C, km/h, Pa) and converted to US units (°F, mph, inHg) in the browser.<br>
-    <b>Coverage:</b> The API returns up to the 500 most-recent observations (~42 hours at 5-min cadence).<br>
+    <b>Coverage:</b> Up to the 500 most-recent observations (~42 hours at 5-min cadence).<br>
     <b>Disclaimer:</b> Unofficial hobbyist weather page. Always consult
     <a href="https://www.weather.gov/grr/" target="_blank" rel="noopener">weather.gov/grr</a> for official forecasts and warnings.<br>
-    <b>Update cadence:</b> Page auto-refreshes every 5 minutes.<br>
+    <b>Update cadence:</b> Auto-refresh every 5 minutes.<br>
+    <b>Install:</b> On Chrome (Android/desktop) or Safari (iOS), use the browser menu → "Add to Home Screen" / "Install" to use this page as a standalone app.<br>
     <b>Hosted on:</b> GitHub Pages · <a href="https://github.com/LykuJenkins/KN-Hyperlocal" target="_blank" rel="noopener">LykuJenkins/KN-Hyperlocal</a>
   </div>
 </footer>
@@ -265,14 +400,16 @@
    KN-Hyperlocal weather page
    Station: AV906 / KE8GJZ-2 Gobles, MI
    Source:  api.weather.gov (NOAA public API, full CORS support)
+   PWA:     manifest.json + sw.js (offline-capable)
    ============================================================ */
 
 const STATION_ID  = "AV906";
 const STATION_NAME = "KE8GJZ-2 Gobles, MI";
 const REFRESH_MS  = 5 * 60 * 1000;
-const OBS_LIMIT   = 500; // api.weather.gov max per request — ~42h at 5-min cadence
+const OBS_LIMIT   = 500;
 
 let charts = {};
+let lastObservations = [];
 
 // ----------------- Utilities -----------------
 const $ = (id) => document.getElementById(id);
@@ -290,23 +427,52 @@ const fmtTime = (iso) => {
   });
 };
 
-// Unit conversions (metric API → US customary display)
 const CtoF = (c) => (c === null || isNaN(c)) ? null : c * 9/5 + 32;
 const kmhToMph = (k) => (k === null || isNaN(k)) ? null : k * 0.621371;
 const paToInHg = (p) => (p === null || isNaN(p)) ? null : p / 3386.39;
 const mToMi = (m) => (m === null || isNaN(m)) ? null : m * 0.000621371;
 
-// Extract a numeric value from an api.weather.gov observation field
-// Fields look like: { unitCode: "wmoUnit:degC", value: 15.56, qualityControl: "V" }
 const val = (field) => {
   if (!field || field.value === null || field.value === undefined) return null;
   const v = field.value;
   return (typeof v === "number" && !isNaN(v)) ? v : null;
 };
 
+// ----------------- Tabs -----------------
+function initTabs() {
+  const tabs = document.querySelectorAll(".tab");
+  const panels = document.querySelectorAll(".tab-panel");
+
+  // Initial tab from URL ?tab=
+  const params = new URLSearchParams(location.search);
+  const initial = params.get("tab") === "details" ? "details" : "current";
+
+  function activate(name) {
+    tabs.forEach(t => {
+      const active = t.dataset.tab === name;
+      t.classList.toggle("active", active);
+      t.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    panels.forEach(p => {
+      p.classList.toggle("active", p.id === "panel-" + name);
+    });
+    // Lazy-render charts when details tab is first opened
+    if (name === "details" && lastObservations.length) {
+      renderCharts(lastObservations);
+    }
+    // Update URL without scrolling
+    const url = new URL(location);
+    if (name === "current") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", name);
+    history.replaceState(null, "", url);
+  }
+
+  tabs.forEach(t => t.addEventListener("click", () => activate(t.dataset.tab)));
+  activate(initial);
+}
+
 // ----------------- Fetch data -----------------
 async function fetchObservations() {
-  // Single request to /observations?limit=500 returns latest-first array
   const url = `https://api.weather.gov/stations/${STATION_ID}/observations?limit=${OBS_LIMIT}`;
   const r = await fetch(url, { headers: { "Accept": "application/geo+json" } });
   if (!r.ok) throw new Error("HTTP " + r.status);
@@ -314,7 +480,6 @@ async function fetchObservations() {
   if (!d.features || !d.features.length) {
     throw new Error("No observations returned for station " + STATION_ID);
   }
-  // Sort ascending by timestamp so charts render left-to-right
   const obs = d.features
     .map(f => f.properties)
     .filter(p => p && p.timestamp)
@@ -340,7 +505,6 @@ function renderCurrent(obs) {
   const presP = val(cur.barometricPressure);
   const visM  = val(cur.visibility);
 
-  // Convert to US units
   const tempF = CtoF(tempC);
   const dwptF = CtoF(dwptC);
   const wspd  = kmhToMph(wspdK);
@@ -348,7 +512,7 @@ function renderCurrent(obs) {
   const pres  = paToInHg(presP);
   const vis   = mToMi(visM);
 
-  // Feels-like: use API-provided values when present, else compute
+  // Feels-like
   let feelsF = null;
   const hiC = val(cur.heatIndex);
   const wcC = val(cur.windChill);
@@ -369,7 +533,7 @@ function renderCurrent(obs) {
     }
   }
 
-  // Pressure trend: compare current to ~1 hour ago (12 obs back at 5-min cadence)
+  // Pressure trend
   let trend = "—";
   if (pres !== null && obs.length > 12) {
     const pastP = paToInHg(val(obs[obs.length - 13].barometricPressure));
@@ -379,7 +543,7 @@ function renderCurrent(obs) {
     }
   }
 
-  // 24h hi/lo from observations on the same date as current
+  // 24h hi/lo
   let hiF = null, loF = null;
   if (tempF !== null) {
     const curDate = new Date(cur.timestamp).toDateString();
@@ -392,12 +556,10 @@ function renderCurrent(obs) {
     }
   }
 
-  // Condition text from available signals
   let cond = "Clear / Fair";
   if (rh !== null && rh >= 90) cond = "Humid / Fog possible";
   else if (rh !== null && rh <= 30) cond = "Dry";
 
-  // Populate
   $("tempVal").textContent = fmtNum(tempF,0);
   $("condVal").textContent = cond;
   $("feelsVal").textContent = feelsF !== null ? `Feels like ${fmtNum(feelsF,0)}°F` : "";
@@ -429,7 +591,8 @@ function renderCurrent(obs) {
 
 // ----------------- Render charts -----------------
 function makeChart(canvasId, datasets, opts={}) {
-  const ctx = $(canvasId).getContext("2d");
+  const ctx = $(canvasId);
+  if (!ctx) return;
   if (charts[canvasId]) charts[canvasId].destroy();
   const defaults = {
     responsive: true,
@@ -450,7 +613,7 @@ function makeChart(canvasId, datasets, opts={}) {
     },
     elements: { point: { radius: 0, hoverRadius: 4 }, line: { borderWidth: 2, tension: 0.25 } }
   };
-  charts[canvasId] = new Chart(ctx, {
+  charts[canvasId] = new Chart(ctx.getContext("2d"), {
     type: "line",
     data: { datasets },
     options: Object.assign({}, defaults, opts)
@@ -471,36 +634,29 @@ function pair(times, extractor, color, label, fill=false) {
 function renderCharts(obs) {
   const times = obs.map(o => new Date(o.timestamp));
 
-  // Temperature & Dewpoint (°F)
   makeChart("chartTemp", [
     pair(times, i => CtoF(val(obs[i].temperature)),     "#d62828", "Temperature"),
     pair(times, i => CtoF(val(obs[i].dewpoint)),        "#1f7ae0", "Dewpoint"),
   ]);
 
-  // Wind + Gust (mph)
   makeChart("chartWind", [
     pair(times, i => kmhToMph(val(obs[i].windSpeed)),   "#003e7e", "Wind speed"),
     pair(times, i => kmhToMph(val(obs[i].windGust)),    "#f4a300", "Gust"),
   ]);
 
-  // Pressure (inHg)
   makeChart("chartPres", [
     pair(times, i => paToInHg(val(obs[i].barometricPressure)), "#5a3eaa", "Pressure", true),
   ]);
 
-  // RH (%)
   makeChart("chartRH", [
     pair(times, i => val(obs[i].relativeHumidity),      "#1b8a3a", "Relative humidity", true),
   ], { scales: {
-       x: charts.chartTemp?.options.scales.x,
        y: { min:0, max:100, grid:{color:"#eef2f7"}, ticks:{font:{size:10}} }
   }});
 
-  // Wind direction (degrees)
   makeChart("chartDir", [
     pair(times, i => val(obs[i].windDirection),         "#7a4a00", "Wind direction", false),
   ], { scales: {
-       x: charts.chartTemp?.options.scales.x,
        y: { min:0, max:360, grid:{color:"#eef2f7"}, ticks:{font:{size:10}, stepSize:90, callback:(v)=>v+"°"} }
   }});
 }
@@ -511,10 +667,7 @@ function renderTable(obs) {
     $("obsBody").innerHTML = `<tr><td colspan="8" style="text-align:center;color:#9aa6b5;padding:20px">No observations available</td></tr>`;
     return;
   }
-  // Most-recent first
   const sorted = obs.slice().reverse();
-
-  // Subsample to ~100 rows so the table is scrollable, not 500 rows
   let display = sorted;
   if (sorted.length > 100) {
     const step = Math.ceil(sorted.length / 100);
@@ -556,13 +709,17 @@ async function refresh() {
   text.textContent = "Fetching latest observations…";
   try {
     const obs = await fetchObservations();
+    lastObservations = obs;
     renderCurrent(obs);
-    renderCharts(obs);
     renderTable(obs);
+    // Charts only render if details tab is active (lazy), otherwise render on tab switch
+    if (document.getElementById("panel-details").classList.contains("active")) {
+      renderCharts(obs);
+    }
     const cov = obs.length > 0
       ? `${obs.length} obs · ${fmtTime(obs[0].timestamp)} → ${fmtTime(obs[obs.length-1].timestamp)}`
       : "";
-    text.textContent = `Last updated ${new Date().toLocaleTimeString("en-US", {hour:"numeric",minute:"2-digit",second:"2-digit",hour12:true})} · ${cov} · auto-refresh in 5 min`;
+    text.textContent = `Updated ${new Date().toLocaleTimeString("en-US", {hour:"numeric",minute:"2-digit",second:"2-digit",hour12:true})} · ${cov} · refresh in 5 min`;
   } catch (e) {
     console.error(e);
     banner.classList.add("error");
@@ -571,6 +728,45 @@ async function refresh() {
   }
 }
 
+// ----------------- PWA: install prompt -----------------
+let deferredPrompt = null;
+function initInstallPrompt() {
+  const btn = $("installBtn");
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    btn.classList.add("show");
+  });
+  btn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    btn.classList.remove("show");
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    console.log("Install choice:", choice.outcome);
+    deferredPrompt = null;
+  });
+  window.addEventListener("appinstalled", () => {
+    btn.classList.remove("show");
+    deferredPrompt = null;
+    console.log("PWA installed");
+  });
+}
+
+// ----------------- PWA: service worker -----------------
+function registerSW() {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js")
+        .then(reg => console.log("SW registered:", reg.scope))
+        .catch(err => console.warn("SW registration failed:", err));
+    });
+  }
+}
+
+// ----------------- Boot -----------------
+initTabs();
+initInstallPrompt();
+registerSW();
 refresh();
 setInterval(refresh, REFRESH_MS);
 </script>
