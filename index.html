@@ -169,6 +169,74 @@
   .install-btn.show{display:inline-flex;align-items:center;gap:4px}
   .install-btn:active{transform:translateY(1px)}
 
+  /* Settings gear + slide-down panel */
+  .settings-gear{
+    background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.25);
+    color:#fff;
+    width:32px;height:32px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:16px;line-height:1;
+    flex:0 0 auto;
+    transition:background .15s, transform .2s;
+  }
+  .settings-gear:hover{background:rgba(255,255,255,.28)}
+  .settings-gear:active{transform:rotate(45deg)}
+  .settings-gear.active{background:var(--accent);color:#1c1c1c;border-color:var(--accent)}
+  .hero-row{display:flex;align-items:flex-start;gap:10px}
+  .hero-row .title-block{flex:1 1 auto;min-width:0}
+
+  .settings-panel{
+    max-height:0;overflow:hidden;
+    background:rgba(0,0,0,.18);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    color:#fff;
+    transition:max-height .3s ease;
+    border-top:1px solid rgba(255,255,255,.1);
+  }
+  .settings-panel.open{max-height:380px}
+  .settings-panel .inner{
+    max-width:560px;margin:0 auto;padding:12px 16px 14px;
+  }
+  .settings-row{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .settings-row:last-child{border-bottom:none}
+  .settings-row .lbl{font-size:13px;font-weight:600;color:#fff;line-height:1.2}
+  .settings-row .desc{font-size:11px;opacity:.75;margin-top:1px;line-height:1.3}
+  .settings-row .desc.error{color:#ff9b9b;opacity:1}
+  /* Toggle switch */
+  .toggle{
+    flex:0 0 auto;position:relative;width:42px;height:24px;
+    background:rgba(255,255,255,.25);
+    border-radius:12px;cursor:pointer;
+    transition:background .2s;
+  }
+  .toggle::after{
+    content:"";position:absolute;top:2px;left:2px;
+    width:20px;height:20px;border-radius:50%;
+    background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);
+    transition:left .2s;
+  }
+  .toggle.on{background:var(--accent)}
+  .toggle.on::after{left:20px}
+  /* Traveling badge in refresh line */
+  .traveling-badge{
+    display:inline-block;background:var(--accent);color:#1c1c1c;
+    padding:1px 6px;border-radius:8px;font-size:9px;font-weight:700;
+    letter-spacing:.3px;margin-right:5px;text-transform:uppercase;
+  }
+  .station-name-btn{
+    background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+    color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;
+    cursor:pointer;font-weight:500;
+  }
+  .station-name-btn:hover{background:rgba(255,255,255,.22)}
+
   /* Tabs */
   .tabs{
     background:var(--card);
@@ -382,14 +450,46 @@
       <img src="logo-128.png" alt="" width="48" height="48" loading="eager" decoding="async">
     </div>
     <div class="title-block">
-      <h1>Gobles, Michigan</h1>
-      <p class="sub">KE8GJZ-2 · APRSWXNET/CWOP · NWS Grand Rapids</p>
+      <div class="hero-row">
+        <div style="flex:1 1 auto;min-width:0">
+          <h1 id="heroPlaceName">Gobles, Michigan</h1>
+          <p class="sub" id="heroStationInfo">KE8GJZ-2 · APRSWXNET/CWOP · NWS Grand Rapids</p>
+        </div>
+        <button class="settings-gear" id="settingsGear" aria-label="Settings" title="Settings">⚙️</button>
+      </div>
       <div class="refresh" id="refreshBanner">
         <span class="dot"></span><span id="refreshText">Initializing…</span>
       </div>
       <button id="installBtn" class="install-btn" aria-label="Install KN-Hyperlocal app">
         <span>⬇</span> Install app
       </button>
+    </div>
+  </div>
+</section>
+
+<!-- Settings panel (slides down when gear is clicked) -->
+<section class="settings-panel" id="settingsPanel">
+  <div class="inner">
+    <div class="settings-row">
+      <div>
+        <div class="lbl">🧭 Traveling Mode</div>
+        <div class="desc" id="travelingDesc">Use your device GPS to find the nearest weather station.</div>
+      </div>
+      <div class="toggle" id="travelingToggle" role="switch" aria-checked="false" tabindex="0"></div>
+    </div>
+    <div class="settings-row" id="manualStationRow" hidden>
+      <div>
+        <div class="lbl">📍 Current Station</div>
+        <div class="desc" id="currentStationDesc">AV906 · Gobles, MI</div>
+      </div>
+      <button class="station-name-btn" id="relocateBtn">↻ Re-locate</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="lbl">ℹ️ About</div>
+        <div class="desc">Data: NOAA api.weather.gov · Radar: RainViewer · Sun: sunrisesunset.io</div>
+      </div>
+      <a href="https://github.com/LykuJenkins/KN-Hyperlocal" target="_blank" rel="noopener" class="station-name-btn">GitHub ↗</a>
     </div>
   </div>
 </section>
@@ -579,8 +679,16 @@
    PWA:     manifest.json + sw.js (offline-capable)
    ============================================================ */
 
-const STATION_ID  = "AV906";
-const STATION_NAME = "KE8GJZ-2 Gobles, MI";
+// Home station (defaults) — used when Traveling Mode is OFF
+const HOME_STATION_ID   = "AV906";
+const HOME_STATION_NAME = "KE8GJZ-2 Gobles, MI";
+const HOME_STATION_LAT  = 42.415;
+const HOME_STATION_LON  = -85.910;
+const HOME_STATION_SUB  = "KE8GJZ-2 · APRSWXNET/CWOP · NWS Grand Rapids";
+
+// Active station (mutable — changes when Traveling Mode picks a new station)
+let STATION_ID   = HOME_STATION_ID;
+let STATION_NAME = HOME_STATION_NAME;
 const REFRESH_MS  = 5 * 60 * 1000;
 const OBS_LIMIT   = 500;
 
@@ -1061,8 +1169,8 @@ function registerSW() {
            + NWS api.weather.gov gridpoint forecast (7-day PoP/QPF)
    ============================================================ */
 
-const STATION_LAT = 42.415;
-const STATION_LON = -85.910;
+let STATION_LAT = HOME_STATION_LAT;
+let STATION_LON = HOME_STATION_LON;
 const RAIN_RADIUS_MI = 20;
 const RADAR_ZOOM = 8;          // 8 gives ~1.1 mi/pixel at lat 42 — plenty of resolution
 const RAIN_THRESHOLD_DBZ = 20; // light rain threshold
@@ -1754,10 +1862,270 @@ async function applyThemeOnSchedule() {
   }
 }
 
+/* ============================================================
+   Traveling Mode — use device GPS to find nearest NWS station
+   ============================================================ */
+
+let travelingMode = false;
+let travelingStation = null;  // { id, name, lat, lon, distanceMi, bearing, provider }
+
+// Persist to localStorage so the setting survives reloads
+function loadTravelingState() {
+  try {
+    const s = localStorage.getItem("kn-traveling-mode");
+    if (s === "on") {
+      travelingMode = true;
+      const cached = localStorage.getItem("kn-traveling-station");
+      if (cached) {
+        travelingStation = JSON.parse(cached);
+        applyTravelingStation(travelingStation);
+      }
+    }
+  } catch (e) { console.warn("localStorage unavailable:", e.message); }
+}
+
+function saveTravelingState() {
+  try {
+    localStorage.setItem("kn-traveling-mode", travelingMode ? "on" : "off");
+    if (travelingStation) {
+      localStorage.setItem("kn-traveling-station", JSON.stringify(travelingStation));
+    } else {
+      localStorage.removeItem("kn-traveling-station");
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function applyTravelingStation(st) {
+  if (!st) {
+    // Revert to home
+    STATION_ID   = HOME_STATION_ID;
+    STATION_NAME = HOME_STATION_NAME;
+    STATION_LAT  = HOME_STATION_LAT;
+    STATION_LON  = HOME_STATION_LON;
+  } else {
+    STATION_ID   = st.id;
+    STATION_NAME = st.name;
+    STATION_LAT  = st.lat;
+    STATION_LON  = st.lon;
+  }
+  // Invalidate cached grid coords so forecast fetch uses the new station
+  cachedGridCoords = null;
+  // Update hero text
+  updateHeroStationInfo();
+  // Update settings panel station description
+  const desc = $("currentStationDesc");
+  if (desc) {
+    desc.textContent = st
+      ? `${st.id} · ${st.name} · ${st.distanceMi.toFixed(1)} mi away`
+      : `${HOME_STATION_ID} · Gobles, MI`;
+  }
+}
+
+function updateHeroStationInfo() {
+  const placeName = $("heroPlaceName");
+  const stationInfo = $("heroStationInfo");
+  if (!placeName || !stationInfo) return;
+  if (travelingMode && travelingStation) {
+    // Use the station name as the place name (e.g., "Ann Arbor, Ann Arbor Municipal Airport")
+    // Trim to first comma for cleaner display
+    const shortName = travelingStation.name.split(",").slice(-1)[0].trim() || travelingStation.name;
+    placeName.textContent = shortName;
+    stationInfo.innerHTML =
+      `<span class="traveling-badge">Traveling</span>` +
+      `${travelingStation.id} · ${travelingStation.provider || "NWS"} · ${travelingStation.distanceMi.toFixed(1)} mi away`;
+  } else {
+    placeName.textContent = "Gobles, Michigan";
+    stationInfo.textContent = HOME_STATION_SUB;
+  }
+}
+
+// Find the nearest NWS observation station to a given lat/lon
+async function findNearestStation(lat, lon) {
+  // Step 1: resolve grid coords for this point
+  const r1 = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
+  if (!r1.ok) throw new Error("points HTTP " + r1.status);
+  const d1 = await r1.json();
+  const office = d1.properties.gridId;
+  const gx = d1.properties.gridX;
+  const gy = d1.properties.gridY;
+
+  // Step 2: list stations in that grid cell — they come sorted by distance, closest first
+  const r2 = await fetch(`https://api.weather.gov/gridpoints/${office}/${gx},${gy}/stations`);
+  if (!r2.ok) throw new Error("stations HTTP " + r2.status);
+  const d2 = await r2.json();
+  const features = d2.features || [];
+  if (!features.length) throw new Error("No stations found near this location");
+
+  // Pick the closest one with a valid stationIdentifier
+  for (const f of features) {
+    const p = f.properties || {};
+    if (!p.stationIdentifier) continue;
+    const coords = (f.geometry && f.geometry.coordinates) || [null, null];
+    const stLon = coords[0];
+    const stLat = coords[1];
+    if (stLat === null || stLon === null) continue;
+    const distanceM = p.distance && p.distance.value ? p.distance.value : null;
+    const distanceMi = distanceM !== null ? distanceM / 1609.34 : haversineMi(lat, lon, stLat, stLon);
+    return {
+      id: p.stationIdentifier,
+      name: p.name || p.stationIdentifier,
+      lat: stLat,
+      lon: stLon,
+      distanceMi,
+      bearing: (p.bearing && p.bearing.value) || 0,
+      provider: p.provider || "NWS",
+      timeZone: p.timeZone || "America/Detroit"
+    };
+  }
+  throw new Error("No usable station found in nearest-stations list");
+}
+
+// Prompt for GPS and switch to nearest station
+async function activateTravelingMode() {
+  if (!navigator.geolocation) {
+    setTravelingDesc("Geolocation is not supported by this browser.", true);
+    return false;
+  }
+  setTravelingDesc("Requesting GPS location…");
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        const acc = pos.coords.accuracy;
+        setTravelingDesc(`GPS locked (${acc.toFixed(0)}m accuracy). Finding nearest station…`);
+        try {
+          const st = await findNearestStation(lat, lon);
+          travelingStation = st;
+          travelingMode = true;
+          saveTravelingState();
+          applyTravelingStation(st);
+          setTravelingDesc(`Using ${st.id} · ${st.name} · ${st.distanceMi.toFixed(1)} mi away`);
+          // Trigger a full refresh with the new station
+          await refreshAll();
+          resolve(true);
+        } catch (e) {
+          console.error("Nearest-station lookup failed:", e);
+          setTravelingDesc("Could not find a station near you: " + e.message, true);
+          resolve(false);
+        }
+      },
+      (err) => {
+        let msg = "Location access denied.";
+        if (err.code === err.PERMISSION_DENIED) msg = "Location permission denied. Enable location for this site in browser settings.";
+        else if (err.code === err.POSITION_UNAVAILABLE) msg = "Location unavailable. Check GPS/network.";
+        else if (err.code === err.TIMEOUT) msg = "Location request timed out. Try again.";
+        setTravelingDesc(msg, true);
+        resolve(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  });
+}
+
+function deactivateTravelingMode() {
+  travelingMode = false;
+  travelingStation = null;
+  saveTravelingState();
+  applyTravelingStation(null);
+  setTravelingDesc("Using home station AV906 (Gobles, MI).");
+  // Refresh with home station
+  refreshAll();
+}
+
+function setTravelingDesc(text, isError = false) {
+  const el = $("travelingDesc");
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle("error", isError);
+}
+
+// Full refresh — observations + radar + forecast + theme
+async function refreshAll() {
+  // Clear old charts so they re-render with new data
+  for (const k of Object.keys(charts)) {
+    try { charts[k].destroy(); } catch (e) {}
+    delete charts[k];
+  }
+  lastObservations = [];
+  lastRadarAnalysis = null;
+  lastForecast = null;
+  cachedSunriseSunset = null;
+  await Promise.all([
+    refresh(),
+    refreshRainTracker(),
+    applyThemeOnSchedule()
+  ]);
+}
+
+// Settings panel open/close
+function initSettings() {
+  const gear = $("settingsGear");
+  const panel = $("settingsPanel");
+  const toggle = $("travelingToggle");
+  const relocate = $("relocateBtn");
+  const manualRow = $("manualStationRow");
+
+  gear.addEventListener("click", () => {
+    const open = panel.classList.toggle("open");
+    gear.classList.toggle("active", open);
+    gear.textContent = open ? "✕" : "⚙️";
+    // Show the "current station" row whenever settings is open
+    manualRow.hidden = !open;
+  });
+
+  async function flipTraveling() {
+    if (!travelingMode) {
+      toggle.classList.add("loading");
+      toggle.style.opacity = ".5";
+      const ok = await activateTravelingMode();
+      toggle.style.opacity = "";
+      toggle.classList.remove("loading");
+      if (ok) {
+        toggle.classList.add("on");
+        toggle.setAttribute("aria-checked", "true");
+      } else {
+        toggle.classList.remove("on");
+        toggle.setAttribute("aria-checked", "false");
+        // Keep travelingMode false since activation failed
+        travelingMode = false;
+      }
+    } else {
+      deactivateTravelingMode();
+      toggle.classList.remove("on");
+      toggle.setAttribute("aria-checked", "false");
+    }
+  }
+  toggle.addEventListener("click", flipTraveling);
+  toggle.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); flipTraveling(); }
+  });
+
+  relocate.addEventListener("click", () => {
+    if (travelingMode) {
+      activateTravelingMode();
+    } else {
+      // If traveling mode is off, treat as quick toggle-on
+      toggle.click();
+    }
+  });
+
+  // Restore prior state from localStorage
+  loadTravelingState();
+  if (travelingMode && travelingStation) {
+    toggle.classList.add("on");
+    toggle.setAttribute("aria-checked", "true");
+    setTravelingDesc(`Using ${travelingStation.id} · ${travelingStation.name} · ${travelingStation.distanceMi.toFixed(1)} mi away`);
+    // Refresh data in background using the restored station
+    setTimeout(() => refreshAll(), 200);
+  }
+}
+
 // ----------------- Boot -----------------
 initTabs();
 initInstallPrompt();
 registerSW();
+initSettings();
 refresh();
 refreshRainTracker();
 setInterval(refresh, REFRESH_MS);
