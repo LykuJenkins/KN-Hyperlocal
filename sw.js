@@ -4,16 +4,19 @@
  *   - Cache-first for static assets (icons, scripts)
  *   - Offline fallback: serve cached index.html when network fails
  */
-const CACHE_VERSION = "kn-hyperlocal-v2";
+const CACHE_VERSION = "kn-hyperlocal-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
+  "./favicon.ico",
   "./favicon-32.png",
   "./icon-192.png",
   "./icon-512.png",
   "./icon-512-maskable.png",
   "./apple-touch-icon.png",
+  "./logo-64.png",
+  "./logo-128.png",
   "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js",
   "https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"
 ];
