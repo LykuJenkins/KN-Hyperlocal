@@ -286,6 +286,67 @@
   .tab-panel.active{animation:fadeIn .25s ease}
   @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
+  /* Rain tracker */
+  .rain-status{
+    display:flex;align-items:center;gap:12px;
+    padding:12px;border-radius:8px;margin-bottom:12px;
+    background:linear-gradient(135deg,#f7f9fc 0%,#eef2f7 100%);
+    border:1px solid var(--line);
+  }
+  .rain-status .icon{
+    width:44px;height:44px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;flex:0 0 auto;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);
+  }
+  .rain-status .text{flex:1 1 auto;min-width:0}
+  .rain-status .title{font-size:15px;font-weight:700;line-height:1.2;margin:0}
+  .rain-status .sub{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.3}
+  .rain-status.rain     {background:linear-gradient(135deg,#dbeafe 0%,#bfdbfe 100%);border-color:#60a5fa}
+  .rain-status.rain .icon{background:#3b82f6;color:#fff}
+  .rain-status.heavy    {background:linear-gradient(135deg,#fef3c7 0%,#fde68a 100%);border-color:#f59e0b}
+  .rain-status.heavy .icon{background:#f59e0b;color:#fff}
+  .rain-status.severe   {background:linear-gradient(135deg,#fee2e2 0%,#fecaca 100%);border-color:#dc2626}
+  .rain-status.severe .icon{background:#dc2626;color:#fff}
+  .rain-status.clear    {background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-color:#22c55e}
+  .rain-status.clear .icon{background:#22c55e;color:#fff}
+  .rain-status.scanning {background:linear-gradient(135deg,#f7f9fc 0%,#eef2f7 100%);border-color:var(--line)}
+  .rain-status.scanning .icon{background:#94a3b8;color:#fff}
+
+  .rain-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+  @media (max-width:640px){.rain-stats{grid-template-columns:repeat(2,1fr)}}
+  .rain-stat{
+    background:#f7f9fc;border:1px solid var(--line);border-radius:6px;padding:8px 10px;
+  }
+  .rain-stat .lbl{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px}
+  .rain-stat .val{font-size:16px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums;line-height:1.1}
+  .rain-stat .val .u{font-size:10px;color:var(--ink-soft);font-weight:500;margin-left:2px}
+  .rain-stat .sub{font-size:10px;color:var(--ink-soft);margin-top:2px}
+  .rain-stat.dim{opacity:.4}
+
+  .rain-duration{
+    margin-top:8px;padding:10px 12px;border-radius:6px;
+    background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;
+    font-size:13px;line-height:1.4;
+  }
+  .rain-duration b{color:#7c2d12}
+
+  .rain-meta{
+    margin-top:10px;font-size:11px;color:var(--ink-soft);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;
+  }
+
+  /* 7-day outlook */
+  .outlook-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  @media (max-width:560px){.outlook-summary{grid-template-columns:1fr}}
+  .outlook-stat{
+    background:#f7f9fc;border:1px solid var(--line);border-radius:6px;padding:10px 12px;
+  }
+  .outlook-stat .lbl{font-size:10px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.4px}
+  .outlook-stat .val{font-size:18px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums;color:var(--nws-blue)}
+  .outlook-stat .sub{font-size:11px;color:var(--ink-soft);margin-top:2px}
+  .outlook-chart-wrap{position:relative;width:100%;height:160px;margin-top:8px}
+
   /* Hidden state */
   [hidden]{display:none!important}
 </style>
@@ -354,6 +415,67 @@
           <div class="stat"><div class="lbl">Visibility</div><div class="val"><span id="visVal">--</span><span class="u">mi</span></div><div class="sub" id="visSub">&nbsp;</div></div>
           <div class="stat"><div class="lbl">24h Temp Range</div><div class="val" id="hiLoVal">--</div><div class="sub" id="hiLoSub">&nbsp;</div></div>
         </div>
+      </div>
+    </section>
+
+    <!-- Rain Tracker -->
+    <section class="card" id="rainTrackerCard">
+      <h2>Rain Tracker <span class="small">NEXRAD reflectivity · 20 mi radius</span></h2>
+      <div class="rain-status scanning" id="rainStatus">
+        <div class="icon">📡</div>
+        <div class="text">
+          <div class="title" id="rainStatusTitle">Scanning radar…</div>
+          <div class="sub" id="rainStatusSub">Analyzing latest NEXRAD reflectivity</div>
+        </div>
+      </div>
+      <div class="rain-stats" id="rainStats" hidden>
+        <div class="rain-stat" id="rsDistance">
+          <div class="lbl">Distance</div>
+          <div class="val"><span id="rsDistVal">--</span><span class="u">mi</span></div>
+          <div class="sub" id="rsDistSub">--</div>
+        </div>
+        <div class="rain-stat" id="rsEta">
+          <div class="lbl">ETA at station</div>
+          <div class="val"><span id="rsEtaVal">--</span><span class="u">min</span></div>
+          <div class="sub" id="rsEtaSub">--</div>
+        </div>
+        <div class="rain-stat" id="rsIntensity">
+          <div class="lbl">Intensity</div>
+          <div class="val"><span id="rsDbzVal">--</span><span class="u">dBZ</span></div>
+          <div class="sub" id="rsDbzLabel">--</div>
+        </div>
+        <div class="rain-stat" id="rsSize">
+          <div class="lbl">Cell size</div>
+          <div class="val"><span id="rsSizeVal">--</span><span class="u">mi</span></div>
+          <div class="sub" id="rsSizeSub">--</div>
+        </div>
+      </div>
+      <div class="rain-duration" id="rainDuration" hidden></div>
+      <div class="rain-meta" id="rainMeta">Radar source: RainViewer · NEXRAD</div>
+    </section>
+
+    <!-- 7-Day Rain Outlook -->
+    <section class="card" id="rainOutlookCard">
+      <h2>7-Day Rain Outlook <span class="small">NWS gridpoint forecast</span></h2>
+      <div class="outlook-summary" id="outlookSummary">
+        <div class="outlook-stat">
+          <div class="lbl">Next Rain Chance</div>
+          <div class="val" id="olNextVal">--</div>
+          <div class="sub" id="olNextSub">Loading forecast…</div>
+        </div>
+        <div class="outlook-stat">
+          <div class="lbl">Max Chance (7 days)</div>
+          <div class="val" id="olMaxVal">--</div>
+          <div class="sub" id="olMaxSub">--</div>
+        </div>
+        <div class="outlook-stat">
+          <div class="lbl">Total QPF (7 days)</div>
+          <div class="val" id="olQpfVal">--</div>
+          <div class="sub" id="olQpfSub">--</div>
+        </div>
+      </div>
+      <div class="outlook-chart-wrap">
+        <canvas id="chartOutlook"></canvas>
       </div>
     </section>
 
@@ -810,12 +932,649 @@ function registerSW() {
   }
 }
 
+/* ============================================================
+   Rain Tracker module
+   Source: RainViewer (NEXRAD reflectivity tiles, CORS-friendly)
+           + NWS api.weather.gov gridpoint forecast (7-day PoP/QPF)
+   ============================================================ */
+
+const STATION_LAT = 42.415;
+const STATION_LON = -85.910;
+const RAIN_RADIUS_MI = 20;
+const RADAR_ZOOM = 8;          // 8 gives ~1.1 mi/pixel at lat 42 — plenty of resolution
+const RAIN_THRESHOLD_DBZ = 20; // light rain threshold
+
+// dBZ color palette (matches RainViewer color scheme 2)
+// Each entry: [R, G, B, dBZ]
+const DBZ_PALETTE = [
+  [0, 240, 0,   5], [0, 200, 0,  10], [0, 160, 0,  15],
+  [255, 238, 0, 20], [255, 224, 0, 22], [255, 210, 0, 25],
+  [255, 197, 0, 28], [255, 183, 0, 30], [255, 170, 0, 33],
+  [255, 159, 0, 35], [255, 149, 0, 38], [255, 139, 0, 40],
+  [255, 129, 0, 42], [255, 68, 0,  45], [242, 54, 0,  48],
+  [230, 40, 0,  50], [217, 27, 0,  53], [205, 13, 0,  55],
+  [193, 0, 0,   58], [168, 0, 0,   62], [143, 0, 0,   65],
+];
+
+function colorToDbz(r, g, b, a) {
+  if (a < 50) return 0;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  if (mx - mn < 80) return 0;              // low saturation = basemap
+  if (b > r + 30 && b > g + 30) return 0;  // blue-dominant = water basemap
+  let bestDist = Infinity, bestDbz = 0;
+  for (const [pr, pg, pb, dbz] of DBZ_PALETTE) {
+    const d = (r-pr)*(r-pr) + (g-pg)*(g-pg) + (b-pb)*(b-pb);
+    if (d < bestDist) { bestDist = d; bestDbz = dbz; }
+  }
+  if (bestDist > 60*60*3) return 0;
+  return bestDbz;
+}
+
+function dbzLabel(dbz) {
+  if (dbz === 0)  return "No echo";
+  if (dbz < 20)   return "Very light";
+  if (dbz < 30)   return "Light rain";
+  if (dbz < 40)   return "Moderate rain";
+  if (dbz < 45)   return "Mod-heavy rain";
+  if (dbz < 50)   return "Heavy rain";
+  if (dbz < 55)   return "Very heavy rain";
+  if (dbz < 60)   return "Heavy + hail possible";
+  if (dbz < 65)   return "Severe storms likely";
+  return "Extreme — large hail/damaging winds";
+}
+
+// Web Mercator conversions
+function latLonToTilePixel(lat, lon, zoom) {
+  const n = Math.pow(2, zoom);
+  const worldX = (lon + 180) / 360 * n * 256;
+  const latRad = lat * Math.PI / 180;
+  const worldY = (1 - Math.log(Math.tan(latRad) + 1/Math.cos(latRad)) / Math.PI) / 2 * n * 256;
+  return {
+    tileX: Math.floor(worldX / 256),
+    tileY: Math.floor(worldY / 256),
+    px: worldX - Math.floor(worldX / 256) * 256,
+    py: worldY - Math.floor(worldY / 256) * 256,
+    worldX, worldY
+  };
+}
+
+function tilePixelToLatLon(tileX, tileY, px, py, zoom) {
+  const n = Math.pow(2, zoom);
+  const worldX = tileX * 256 + px;
+  const worldY = tileY * 256 + py;
+  const lon = worldX / (n * 256) * 360 - 180;
+  const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * worldY / (n * 256))));
+  return { lat: latRad * 180 / Math.PI, lon };
+}
+
+function haversineMi(lat1, lon1, lat2, lon2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+function bearingDeg(lat1, lon1, lat2, lon2) {
+  const φ1 = lat1 * Math.PI / 180, φ2 = lat2 * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function degToCompass2(deg) {
+  const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+// Load a radar tile and return its ImageData
+function loadRadarTile(host, path, tileX, tileY, zoom) {
+  const url = `${host}${path}/256/${zoom}/${tileX}/${tileY}/2/1_1.png`;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 256; canvas.height = 256;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      try {
+        resolve(ctx.getImageData(0, 0, 256, 256));
+      } catch (e) {
+        reject(new Error("Cannot read radar tile: " + e.message));
+      }
+    };
+    img.onerror = () => reject(new Error("Failed to load radar tile"));
+    img.src = url;
+  });
+}
+
+// Find closest pixel with dBZ >= threshold within maxMiles of station
+function findClosestRain(imageData, zoom, tileX, tileY, maxMiles) {
+  const data = imageData.data;
+  const W = 256, H = 256;
+  let best = null;
+  for (let py = 0; py < H; py++) {
+    for (let px = 0; px < W; px++) {
+      const i = (py * W + px) * 4;
+      const dbz = colorToDbz(data[i], data[i+1], data[i+2], data[i+3]);
+      if (dbz < RAIN_THRESHOLD_DBZ) continue;
+      const { lat, lon } = tilePixelToLatLon(tileX, tileY, px, py, zoom);
+      const dist = haversineMi(STATION_LAT, STATION_LON, lat, lon);
+      if (dist > maxMiles) continue;
+      if (!best || dist < best.distMi) {
+        best = { x: px, y: py, dbz, lat, lon, distMi: dist,
+                 bearing: bearingDeg(STATION_LAT, STATION_LON, lat, lon) };
+      }
+    }
+  }
+  return best;
+}
+
+// Flood-fill from a starting pixel to estimate cell size
+function estimateCellSize(imageData, startPx, startPy, zoom, tileX, tileY) {
+  const data = imageData.data;
+  const W = 256, H = 256;
+  const visited = new Uint8Array(W * H);
+  const queue = [[startPx, startPy]];
+  visited[startPy * W + startPx] = 1;
+  let count = 0;
+  let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+  const MAX_PIXELS = 8000;
+  while (queue.length && count < MAX_PIXELS) {
+    const [x, y] = queue.pop();
+    if (x < 0 || x >= W || y < 0 || y >= H) continue;
+    const i = (y * W + x) * 4;
+    const dbz = colorToDbz(data[i], data[i+1], data[i+2], data[i+3]);
+    if (dbz < RAIN_THRESHOLD_DBZ) continue;
+    count++;
+    const { lat, lon } = tilePixelToLatLon(tileX, tileY, x, y, zoom);
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+    for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+      if (visited[ny * W + nx]) continue;
+      visited[ny * W + nx] = 1;
+      queue.push([nx, ny]);
+    }
+  }
+  if (count === 0) return null;
+  const widthMi  = haversineMi(minLat, minLon, minLat, maxLon);
+  const heightMi = haversineMi(minLat, minLon, maxLat, minLon);
+  return { count, widthMi, heightMi, maxDimMi: Math.max(widthMi, heightMi) };
+}
+
+// Estimate storm motion by finding the same cell in the previous radar frame
+function estimateMotion(prevData, curData, currentCell, zoom, tileX, tileY) {
+  const searchRadius = 25;  // ~28 mi search window
+  let bestPrev = null;
+  let bestScore = Infinity;
+  const cx = currentCell.x, cy = currentCell.y;
+  for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+    for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+      const x = cx + dx, y = cy + dy;
+      if (x < 0 || x >= 256 || y < 0 || y >= 256) continue;
+      const i = (y * 256 + x) * 4;
+      const dbz = colorToDbz(prevData.data[i], prevData.data[i+1], prevData.data[i+2], prevData.data[i+3]);
+      if (dbz < RAIN_THRESHOLD_DBZ) continue;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const dbzPenalty = Math.abs(dbz - currentCell.dbz) * 1.5;
+      const score = dist + dbzPenalty;
+      if (score < bestScore) {
+        bestScore = score;
+        bestPrev = { x, y, dbz };
+      }
+    }
+  }
+  if (!bestPrev) return null;
+  const cur  = tilePixelToLatLon(tileX, tileY, currentCell.x, currentCell.y, zoom);
+  const prev = tilePixelToLatLon(tileX, tileY, bestPrev.x, bestPrev.y, zoom);
+  const distMovedMi = haversineMi(prev.lat, prev.lon, cur.lat, cur.lon);
+  if (distMovedMi < 0.5) return { speedMph: 0, bearing: 0, distMovedMi: 0 };  // stationary
+  const bearing = bearingDeg(prev.lat, prev.lon, cur.lat, cur.lon);
+  const speedMph = distMovedMi / (10 / 60);  // 10-minute frame interval
+  return { speedMph, bearing, distMovedMi, fromLat: prev.lat, fromLon: prev.lon };
+}
+
+// Compute ETA at station based on motion + geometry
+function computeEta(closest, motion) {
+  if (!motion || motion.speedMph < 1) return { state: "stationary" };
+  // Bearing from cell to station (reverse of station-to-cell)
+  const cellToStationBearing = bearingDeg(closest.lat, closest.lon, STATION_LAT, STATION_LON);
+  let angleDiff = Math.abs(motion.bearing - cellToStationBearing);
+  if (angleDiff > 180) angleDiff = 360 - angleDiff;
+  if (angleDiff > 100) return { state: "moving-away", motion };
+  const approachSpeed = motion.speedMph * Math.cos(angleDiff * Math.PI / 180);
+  if (approachSpeed < 1) return { state: "stationary" };
+  const etaHours = closest.distMi / approachSpeed;
+  return {
+    state: "approaching",
+    etaMin: Math.round(etaHours * 60),
+    approachSpeed,
+    angleDiff,
+    motion
+  };
+}
+
+// Check dBZ at the station pixel itself
+function stationDbz(imageData, stPx, stPy) {
+  const i = (Math.floor(stPy) * 256 + Math.floor(stPx)) * 4;
+  return colorToDbz(imageData.data[i], imageData.data[i+1], imageData.data[i+2], imageData.data[i+3]);
+}
+
+// Fetch RainViewer frames metadata
+async function fetchRadarFrames() {
+  const r = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+  if (!r.ok) throw new Error("RainViewer HTTP " + r.status);
+  const d = await r.json();
+  return {
+    past: d.radar.past || [],
+    nowcast: d.radar.nowcast || [],
+    host: d.host
+  };
+}
+
+// Main rain analysis
+async function analyzeRain() {
+  const { past, host } = await fetchRadarFrames();
+  if (!past.length) throw new Error("No radar frames available");
+  const latest = past[past.length - 1];
+  const previous = past.length >= 2 ? past[past.length - 2] : null;
+  const { tileX, tileY, px: stPx, py: stPy } = latLonToTilePixel(STATION_LAT, STATION_LON, RADAR_ZOOM);
+
+  const curData = await loadRadarTile(host, latest.path, tileX, tileY, RADAR_ZOOM);
+  const stationRain = stationDbz(curData, stPx, stPy);
+  const closest = findClosestRain(curData, RADAR_ZOOM, tileX, tileY, RAIN_RADIUS_MI);
+
+  let motion = null;
+  if (previous && closest) {
+    try {
+      const prevData = await loadRadarTile(host, previous.path, tileX, tileY, RADAR_ZOOM);
+      motion = estimateMotion(prevData, curData, closest, RADAR_ZOOM, tileX, tileY);
+    } catch (e) { console.warn("Motion estimate skipped:", e.message); }
+  }
+
+  let cellSize = null;
+  if (closest) {
+    cellSize = estimateCellSize(curData, closest.x, closest.y, RADAR_ZOOM, tileX, tileY);
+  }
+
+  return {
+    closest, motion, cellSize, stationRain,
+    scanTime: latest.time * 1000,
+    previousScanTime: previous ? previous.time * 1000 : null
+  };
+}
+
+// Render rain tracker card
+function renderRainTracker(analysis) {
+  const status = $("rainStatus");
+  const stats = $("rainStats");
+  const duration = $("rainDuration");
+  const meta = $("rainMeta");
+  const title = $("rainStatusTitle");
+  const sub = $("rainStatusSub");
+
+  status.classList.remove("scanning","clear","rain","heavy","severe");
+  stats.hidden = true;
+  duration.hidden = true;
+
+  if (!analysis) {
+    status.classList.add("scanning");
+    status.querySelector(".icon").textContent = "📡";
+    title.textContent = "Radar unavailable";
+    sub.textContent = "Could not load NEXRAD reflectivity data";
+    meta.textContent = "Source: RainViewer · NEXRAD";
+    return;
+  }
+
+  const scanDate = new Date(analysis.scanTime);
+  const scanStr = scanDate.toLocaleString("en-US", {
+    weekday:"short", month:"short", day:"numeric",
+    hour:"numeric", minute:"2-digit", hour12:true
+  });
+
+  // Determine status
+  const isRaining = analysis.stationRain >= RAIN_THRESHOLD_DBZ;
+  const hasNearbyRain = !!analysis.closest;
+  const closestDbz = analysis.closest ? analysis.closest.dbz : 0;
+
+  if (isRaining) {
+    if (analysis.stationRain >= 55) {
+      status.classList.add("severe");
+      status.querySelector(".icon").textContent = "⛈️";
+      title.textContent = "Severe precipitation at station";
+      sub.textContent = `${analysis.stationRain} dBZ — heavy rain or thunderstorm`;
+    } else if (analysis.stationRain >= 40) {
+      status.classList.add("heavy");
+      status.querySelector(".icon").textContent = "🌧️";
+      title.textContent = "Heavy rain at station";
+      sub.textContent = `${analysis.stationRain} dBZ — heavy precipitation`;
+    } else {
+      status.classList.add("rain");
+      status.querySelector(".icon").textContent = "🌦️";
+      title.textContent = "Rain at station";
+      sub.textContent = `${analysis.stationRain} dBZ — ${dbzLabel(analysis.stationRain)}`;
+    }
+  } else if (hasNearbyRain) {
+    if (closestDbz >= 55) {
+      status.classList.add("severe");
+      status.querySelector(".icon").textContent = "⛈️";
+      title.textContent = "Severe storm nearby";
+    } else if (closestDbz >= 40) {
+      status.classList.add("heavy");
+      status.querySelector(".icon").textContent = "🌧️";
+      title.textContent = "Heavy rain nearby";
+    } else {
+      status.classList.add("rain");
+      status.querySelector(".icon").textContent = "🌧️";
+      title.textContent = "Rain detected nearby";
+    }
+    sub.textContent = `${closestDbz} dBZ ${analysis.closest.distMi.toFixed(1)} mi ${degToCompass2(analysis.closest.bearing)} of station`;
+  } else {
+    status.classList.add("clear");
+    status.querySelector(".icon").textContent = "☀️";
+    title.textContent = "No rain within 20 miles";
+    sub.textContent = "Clear of precipitation on NEXRAD reflectivity";
+  }
+
+  // Stats grid
+  if (hasNearbyRain) {
+    stats.hidden = false;
+    const c = analysis.closest;
+    $("rsDistVal").textContent = c.distMi.toFixed(1);
+    $("rsDistSub").textContent = `${degToCompass2(c.bearing)} (${Math.round(c.bearing)}°)`;
+
+    const eta = computeEta(c, analysis.motion);
+    if (eta.state === "approaching") {
+      $("rsEtaVal").textContent = eta.etaMin;
+      $("rsEtaSub").textContent = `${eta.approachSpeed.toFixed(0)} mph approach`;
+      $("rsEta").classList.remove("dim");
+    } else if (eta.state === "moving-away") {
+      $("rsEtaVal").textContent = "—";
+      $("rsEtaSub").textContent = "Moving away";
+      $("rsEta").classList.add("dim");
+    } else if (eta.state === "stationary") {
+      $("rsEtaVal").textContent = "—";
+      $("rsEtaSub").textContent = "Stationary / slow";
+      $("rsEta").classList.add("dim");
+    }
+
+    $("rsDbzVal").textContent = c.dbz;
+    $("rsDbzLabel").textContent = dbzLabel(c.dbz);
+
+    if (analysis.cellSize) {
+      $("rsSizeVal").textContent = analysis.cellSize.maxDimMi.toFixed(1);
+      $("rsSizeSub").textContent = `${analysis.cellSize.widthMi.toFixed(1)} × ${analysis.cellSize.heightMi.toFixed(1)} mi`;
+    } else {
+      $("rsSizeVal").textContent = "—";
+      $("rsSizeSub").textContent = "Unknown";
+    }
+  }
+
+  // Duration estimate (when raining at station)
+  if (isRaining && lastForecast) {
+    const durHours = estimateRainDuration(lastForecast);
+    if (durHours !== null) {
+      duration.hidden = false;
+      duration.innerHTML = `<b>🌧️ Estimated duration:</b> Rain expected to continue for ~${durHours} hour${durHours === 1 ? "" : "s"} based on NWS hourly forecast.`;
+    }
+  }
+
+  meta.textContent = `Last scan: ${scanStr} · Source: RainViewer (NEXRAD reflectivity)`;
+}
+
+// Estimate rain duration (hours) from NWS hourly forecast QPF sequence
+function estimateRainDuration(forecast) {
+  if (!forecast || !forecast.hourlyQpf) return null;
+  const now = Date.now();
+  const qpf = forecast.hourlyQpf;
+  // Find first hour with QPF > 0
+  let startIdx = -1;
+  for (let i = 0; i < qpf.length; i++) {
+    if (qpf[i].time < now) continue;
+    if (qpf[i].value > 0.001) { startIdx = i; break; }
+  }
+  if (startIdx === -1) return 0;
+  // Count consecutive hours with QPF > 0
+  let hours = 0;
+  for (let i = startIdx; i < qpf.length; i++) {
+    if (qpf[i].value > 0.001) hours++;
+    else break;
+  }
+  return hours;
+}
+
+/* ----------------- 7-Day Outlook ----------------- */
+
+let cachedGridCoords = null;
+let lastForecast = null;
+
+async function getGridCoords() {
+  if (cachedGridCoords) return cachedGridCoords;
+  const r = await fetch(`https://api.weather.gov/points/${STATION_LAT},${STATION_LON}`);
+  if (!r.ok) throw new Error("points HTTP " + r.status);
+  const d = await r.json();
+  const p = d.properties;
+  cachedGridCoords = { office: p.gridId, x: p.gridX, y: p.gridY };
+  return cachedGridCoords;
+}
+
+function parseIsoPeriod(s) {
+  const [startStr, durStr] = s.split("/");
+  const start = new Date(startStr);
+  const m = durStr.match(/P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?/);
+  const days = parseInt(m[1] || "0", 10);
+  const hours = parseInt(m[2] || "0", 10);
+  const mins = parseInt(m[3] || "0", 10);
+  const ms = (days * 86400 + hours * 3600 + mins * 60) * 1000;
+  return { start, end: new Date(start.getTime() + ms) };
+}
+
+async function fetch7DayForecast() {
+  const { office, x, y } = await getGridCoords();
+  const r = await fetch(`https://api.weather.gov/gridpoints/${office}/${x},${y}`);
+  if (!r.ok) throw new Error("gridpoints HTTP " + r.status);
+  const d = await r.json();
+  const p = d.properties;
+
+  const now = new Date();
+  const sevenDays = new Date(now.getTime() + 7 * 86400 * 1000);
+
+  // Expand PoP values to per-hour and per-day
+  const pop = p.probabilityOfPrecipitation?.values || [];
+  const qpf = p.quantitativePrecipitation?.values || [];
+
+  // Build daily PoP + QPF for next 7 days
+  const daily = {};  // key: YYYY-MM-DD
+  const hourlyQpf = [];
+
+  for (const v of pop) {
+    const { start, end } = parseIsoPeriod(v.validTime);
+    if (end < now) continue;
+    if (start > sevenDays) break;
+    const dateKey = start.toISOString().slice(0, 10);
+    const popVal = v.value || 0;
+    if (!daily[dateKey]) daily[dateKey] = { date: new Date(start), maxPop: 0, qpfMm: 0 };
+    if (popVal > daily[dateKey].maxPop) daily[dateKey].maxPop = popVal;
+  }
+
+  for (const v of qpf) {
+    const { start, end } = parseIsoPeriod(v.validTime);
+    if (end < now) continue;
+    if (start > sevenDays) break;
+    const periodHours = Math.max(0, (Math.min(end, sevenDays) - Math.max(start, now)) / 3600000);
+    const qpfMm = (v.value || 0) * periodHours;  // value is in mm/hr
+    const dateKey = start.toISOString().slice(0, 10);
+    if (!daily[dateKey]) daily[dateKey] = { date: new Date(start), maxPop: 0, qpfMm: 0 };
+    daily[dateKey].qpfMm += qpfMm;
+    // Build hourly QPF for duration estimate
+    let t = new Date(Math.max(start, now));
+    while (t < end && t < sevenDays) {
+      hourlyQpf.push({ time: t.getTime(), value: (v.value || 0) });
+      t = new Date(t.getTime() + 3600000);
+    }
+  }
+
+  const dailyArr = Object.values(daily)
+    .filter(d => d.date >= now && d.date < sevenDays)
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 7);
+
+  // Find next rain chance (PoP >= 30%)
+  let nextRain = null;
+  let maxPop = 0, maxPopDate = null;
+  let totalQpfMm = 0;
+  for (const d of dailyArr) {
+    if (d.maxPop > maxPop) { maxPop = d.maxPop; maxPopDate = d.date; }
+    if (!nextRain && d.maxPop >= 30) nextRain = { date: d.date, pop: d.maxPop };
+    totalQpfMm += d.qpfMm;
+  }
+
+  return {
+    daily: dailyArr,
+    nextRain,
+    maxPop,
+    maxPopDate,
+    totalQpfIn: totalQpfMm / 25.4,
+    hourlyQpf
+  };
+}
+
+function render7DayOutlook(forecast) {
+  if (!forecast) return;
+  // Next rain chance
+  if (forecast.nextRain) {
+    const days = Math.ceil((forecast.nextRain.date.getTime() - Date.now()) / 86400000);
+    const dayStr = forecast.nextRain.date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    $("olNextVal").textContent = forecast.nextRain.pop + "%";
+    $("olNextSub").textContent = days <= 0 ? "Today" : `${dayStr} (${days} day${days===1?"":"s"})`;
+  } else {
+    $("olNextVal").textContent = "0%";
+    $("olNextSub").textContent = "No rain chance (≥30%) in next 7 days";
+  }
+  // Max chance
+  if (forecast.maxPopDate) {
+    const dayStr = forecast.maxPopDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    $("olMaxVal").textContent = forecast.maxPop + "%";
+    $("olMaxSub").textContent = dayStr;
+  } else {
+    $("olMaxVal").textContent = "0%";
+    $("olMaxSub").textContent = "No rain forecast";
+  }
+  // Total QPF
+  $("olQpfVal").textContent = forecast.totalQpfIn.toFixed(2) + '"';
+  $("olQpfSub").textContent = forecast.totalQpfIn < 0.01 ? "Dry period expected"
+                            : forecast.totalQpfIn < 0.5 ? "Light total"
+                            : forecast.totalQpfIn < 2.0 ? "Moderate total"
+                            : "Heavy total";
+
+  // Mini bar chart
+  const ctx = $("chartOutlook").getContext("2d");
+  if (charts.outlook) charts.outlook.destroy();
+  const labels = forecast.daily.map(d =>
+    d.date.toLocaleDateString("en-US", { weekday: "short" })
+  );
+  const popData = forecast.daily.map(d => d.maxPop);
+  const qpfData = forecast.daily.map(d => d.qpfMm / 25.4);  // inches
+  charts.outlook = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Max PoP (%)",
+          data: popData,
+          backgroundColor: popData.map(p =>
+            p >= 60 ? "#1d4ed8" : p >= 30 ? "#3b82f6" : p >= 15 ? "#93c5fd" : "#dbeafe"
+          ),
+          yAxisID: "y",
+          order: 2
+        },
+        {
+          label: "QPF (in)",
+          data: qpfData,
+          type: "line",
+          borderColor: "#f4a300",
+          backgroundColor: "#f4a30033",
+          tension: 0.3,
+          yAxisID: "y1",
+          order: 1,
+          pointRadius: 3,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: true, position: "top", labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              const i = items[0].dataIndex;
+              return forecast.daily[i].date.toLocaleDateString("en-US", { weekday:"long", month:"short", day:"numeric" });
+            },
+            label: (item) => {
+              if (item.dataset.label.includes("PoP")) return `Max PoP: ${item.parsed.y}%`;
+              return `QPF: ${item.parsed.y.toFixed(2)} in`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: {
+          position: "left",
+          min: 0, max: 100,
+          title: { display: true, text: "PoP %", font: { size: 9 } },
+          grid: { color: "#eef2f7" },
+          ticks: { font: { size: 9 }, stepSize: 25 }
+        },
+        y1: {
+          position: "right",
+          min: 0,
+          title: { display: true, text: "QPF in", font: { size: 9 } },
+          grid: { display: false },
+          ticks: { font: { size: 9 } }
+        }
+      }
+    }
+  });
+}
+
+async function refreshRainTracker() {
+  // Run radar analysis and forecast fetch in parallel
+  const radarPromise = analyzeRain().catch(e => {
+    console.warn("Radar analysis failed:", e.message);
+    return null;
+  });
+  const forecastPromise = fetch7DayForecast().catch(e => {
+    console.warn("Forecast fetch failed:", e.message);
+    return null;
+  });
+
+  const [radar, forecast] = await Promise.all([radarPromise, forecastPromise]);
+  lastForecast = forecast;
+  renderRainTracker(radar);
+  render7DayOutlook(forecast);
+}
+
 // ----------------- Boot -----------------
 initTabs();
 initInstallPrompt();
 registerSW();
 refresh();
-setInterval(refresh, REFRESH_MS);
+refreshRainTracker();
+setInterval(refreshRainTracker, REFRESH_MS);
 </script>
 </body>
 </html>
